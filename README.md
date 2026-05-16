@@ -1,2 +1,3 @@
 # oncall-rota-manager
-This repo is used for my QA project
+
+### When working on the project, run `source venv/bin/activate`
