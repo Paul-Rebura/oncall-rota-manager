@@ -6,11 +6,18 @@ from app import engineers, rota, incidents
 @pytest.fixture(autouse=True)
 def setup_test_db(tmp_path, monkeypatch):
     """Use a temporary database for each test."""
+    import sqlite3
     test_db = str(tmp_path / "test.db")
+
+    def make_conn():
+        conn = sqlite3.connect(test_db)
+        conn.row_factory = sqlite3.Row
+        return conn
+
     monkeypatch.setattr("app.database.DB_NAME", test_db)
-    monkeypatch.setattr("app.engineers.get_connection", lambda: __import__('sqlite3').connect(test_db))
-    monkeypatch.setattr("app.rota.get_connection", lambda: __import__('sqlite3').connect(test_db))
-    monkeypatch.setattr("app.incidents.get_connection", lambda: __import__('sqlite3').connect(test_db))
+    monkeypatch.setattr("app.engineers.get_connection", make_conn)
+    monkeypatch.setattr("app.rota.get_connection", make_conn)
+    monkeypatch.setattr("app.incidents.get_connection", make_conn)
     initialise_db()
 
 
@@ -81,7 +88,9 @@ def test_sort_incidents_by_severity(sample_rota_id):
 
 def test_get_all_incidents_sorted_by_date(sample_rota_id):
     """Test that incidents are returned with the most recent first."""
+    import time
     incidents.log_incident(sample_rota_id, "First incident", "low")
+    time.sleep(1)
     incidents.log_incident(sample_rota_id, "Second incident", "high")
     result = incidents.get_all_incidents()
     assert result[0]["title"] == "Second incident"

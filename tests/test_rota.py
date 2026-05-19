@@ -6,10 +6,17 @@ from app import engineers, rota
 @pytest.fixture(autouse=True)
 def setup_test_db(tmp_path, monkeypatch):
     """Use a temporary database for each test."""
+    import sqlite3
     test_db = str(tmp_path / "test.db")
+
+    def make_conn():
+        conn = sqlite3.connect(test_db)
+        conn.row_factory = sqlite3.Row
+        return conn
+
     monkeypatch.setattr("app.database.DB_NAME", test_db)
-    monkeypatch.setattr("app.engineers.get_connection", lambda: __import__('sqlite3').connect(test_db))
-    monkeypatch.setattr("app.rota.get_connection", lambda: __import__('sqlite3').connect(test_db))
+    monkeypatch.setattr("app.engineers.get_connection", make_conn)
+    monkeypatch.setattr("app.rota.get_connection", make_conn)
     initialise_db()
 
 
